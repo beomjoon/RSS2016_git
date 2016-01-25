@@ -1,0 +1,226 @@
+\section{Algorithm}
+The problem that we are trying to solve
+is a black box function optimization of solution constraints, with
+knowledge of values of the past functions. More 
+specifically, we are
+facing a planning problem $z$, and we would like to 
+optimize the function it induces, with the knowledge of 
+the values of past functions induced by $z_1,\cdots,z_n$.
+The main assumption here is that all the problem instances
+are sampled from the same probability distribution, i.e. $z \sim P(z)$.
+
+
+Assume, for now, that we have been given a ``training set'' in the form of
+$n$ problem instances $z_1, \ldots z_n$ drawn from $P(z)$ and $m$   
+solution constraints $\Theta =\{ \theta_1, \ldots, \theta_m\}$, chosen possibly 
+because they were good or optimal for problem instances
+ in the training set.
+
+%We will encode the values of the past functions in
+% $\mathfrak{J}$,  which is an $n$ by $m$ matrix,
+%where $n$ equals the number of training problem instances 
+%and $m$ equals the number of decision variables.
+$$\mathfrak{J}=
+\begin{bmatrix}
+J^{z_1}(\theta_1) &\cdots &J^{z_1}(\theta_m)\\
+J^{z_2}(\theta_1) &\cdots &J^{z_2}(\theta_m)\\
+\vdots & \vdots & \vdots \\
+J^{z_n}(\theta_1) &\cdots &J^{z_n}(\theta_m)
+\end{bmatrix}$$
+Here, $J^{z_i}(\theta_j)$ is the score of executing a plan with $\theta_j$ in a
+training planning problem instance $z_i$. That is, given $\theta$, 
+$J^{z_i}(\theta)$ is a wrapper around a motion planner that 
+calls the planner which returns a plan $P_\theta$ associated with
+ the constraint $\theta$, and then evaluates this plan
+using the underlying score function $J^{z_i}(P_\theta)$.
+
+
+Now, given a new problem instance, z, our goal is to efficiently 
+find a high-scoring   constraint from
+ $\Theta$ without evaluating all of them.   We will, particularly,
+ explore a class of procedures in which we evaluate $J^z(\theta)$
+ for $k << m$ values of $\theta$ in $\Theta$. 
+ It does so by exploiting the patterns among $J^z(\theta)$ values, 
+both across different $z$  for a fixed $\theta$ and 
+across different $\theta$ values for a fixed $z$.
+
+Our strategy will be to construct upper confidence bounds on 
+the score of each of the unevaluated   soultion constraint
+ $\theta_i$ on the new problem instance $z$, and evaluate the one with the highest upper
+ confidence bound. We will do so for $k$ rounds and ultimately
+return the highest-scoring plan $P_{\theta^*}$ that was constructed during 
+the process of evaluating the $k$ selected constraint.  
+This strategy is effective in many problems that involve 
+optimization under uncertainty, selecting the next candidate 
+for evaluation that has the most "potential" to be the best.
+
+First, we make use of the intuition that some constraints (via the 
+plans they generate) are better than others, in expectation
+over problem instances drawn from $P(z)$.  So, if we knew some
+statistics of that distribution it would be possible principle
+to use Chebyshev's inequality to construct a bound of the form
+$$J^z(\theta_i) \leq E_z[J^z(\theta_i)] + C_{1,i} \sigma_z[J^z(\theta_i)]$$
+ which holds with probability $(1/C_{1,i})^2$, for each $\theta_i$.
+Then, we define problem-wise upper bound as
+\begin{align*}
+B_p(\theta_i, z) = E_z[J^z(\theta_i)] + C_{1,i} \sigma_z[J^z(\theta_i)]\numberthis \label{eqn:bc_inf}
+\end{align*}
+
+The interpretation of this upper bound is simple: we should 
+try the   solution constraint that has a high expected value and variance first, 
+because if a constraint has low variance and low expected value,
+then this indicates it consistently performs worse than other   constraints.
+
+
+Second, we exploit correlation between the scores of different constraints on
+the same problem instance.  We again use Chebyshev's inequality to construct a
+bound on the difference between the scores of constraints $i$ and $j$ on the
+problem instance z:
+\begin{align*}
+J^z(\theta_i) \leq J^z(\theta_j) +\mathbb{E}_z[&J^z(\theta_i) - J^z(\theta_j)]
+				+ C_{2,i}\cdot \sigma_z[J^z(\theta_i) - J^z(\theta_j)]
+\end{align*}
+For each   constraint $\theta_j$ that has already been scored on 
+problem instance $z$, we define the constraint-wise upper bound as
+\begin{align*} 
+B_{c,j}(\theta_i, z) = &J^z(\theta_j) + E_z[J^z(\theta_i) - J^z(\theta_j)] \\
++ &C_{2,i}\cdot \sigma_z[J^z(\theta_i) - J^z(\theta_j)] \numberthis \label{eqn:bh_inf}
+\end{align*}
+
+The intuition here is that if the two constraints had a consistent
+difference, then we can estimate the upper bound of the unevaluated
+constraint, $\theta_i$, by adjusting the value of the evaluated constraint 
+by that difference and its variance. From now on, we will refer to 
+$C_{1,i}$ and $C_{2,i}$ as $C$ values.
+
+
+At the $k^{th}$ round of evaluation, we would 
+have evaluated $k-1$ constraints.
+Let $$\tilde{\Theta} = \{\theta^{(1)},\cdots,\theta^{(k-1)}\}$$
+ be the set of evaluated constraints
+so far, and let $$B_{c,\tilde{\Theta}}(\theta_i):=  
+ \{B_{c,\theta^{(1)}}(\theta_i,z),\cdots,B_{c,\theta^{(k-1)}}(\theta_i,z)\}$$ be the set of
+constraint-wise upper confidence bounds on unevaluated $\theta_i$.
+After $k$ round of evaluations, we integrate all the upperbounds constructed so
+far, and select the one that has the tightest value as follows.
+\begin{align*}
+B_k(\theta_i) := \min \{ B_c(\theta_i,z),B_{p,\tilde{\Theta}}(\theta_i)\} \numberthis \label{eqn:b}
+\end{align*}
+
+Unfortunately, constructing the upper bound (\ref{eqn:b}) with 
+(\ref{eqn:bc_inf}) and (\ref{eqn:bh_inf}) is impossible since we do not have
+infinite samples in the real world. Therefore, we have following finite
+approximations of these two equations. Using matrix $\mathfrak{J}$, we have,
+\begin{align*}
+B_{p}(\theta_i) &\approx \mu(J^{z}(\theta_i) )
+				+ C_{1,i} \cdot s (J^{z}(\theta_i) ) \numberthis \label{eqn:bp}\\
+B_{c,\theta_j}(\theta_i,z) &\approx J^z(\theta_j) + \mu (J^z(\theta_i) - J^z(\theta_j))
+				+ C_{2,i} \cdot s(J^z(\theta_i) - J^z(\theta_j)) \numberthis \label{eqn:bc}
+\end{align*}
+where $\mu$ and $s$ denote sample mean and variance. Notice that
+(\ref{eqn:bc}) is a row-wise mean and variance, and (\ref{eqn:bp}) is a 
+mean and variance of column-wise differences in matrix $\mathfrak{J}$.
+
+We provide the detailed pseudo-code of our algorithm, BOX 
+(Blackbox Optimization with eXperience) in Algorithm \ref{alg:BOX}.
+The inputs to the algorithm include the $C$ values for all the 
+constraints, $k$, the number
+ of rounds, $\Theta$, the library
+of solution constraints, and lastly their respective scores in 
+training problem instances, $\mathfrak{J}$. 
+
+In order to create the training data 
+$\mathfrak{J}$ and $\Theta$, we first call 
+Algorithm $\ref{alg:GenTrainData}$ before calling BOX.
+This algorithm takes as inputs 
+$n$, the number of training problem instances, $u$, the
+number of constraints to be generated for each problem
+instance, and the optional parameter $\Theta$, which
+can be either be generated by the algorithm or 
+passed in by external source.
+When $\Theta$ is not given, the algorithm runs 
+\emph{Solver} to generate a   solution constraint.
+Solver is what you would do if you did not have
+the library of constraints.
+For instance, if our solution constraint is a robot 
+base pose to pick 
+an object up from a table, Solver would generate a
+solution constraint by randomly sampling 
+from a continuous collision-free region in the space where 
+the robot can reach the object, and check if there
+is a feasible path to pick the object. The algorithm generates
+ $u$ number of constraints for each 
+problem instance, and we have in total $m=u\cdot n$ number
+of constraints. The algorithm then produces
+the matrix $\mathfrak{J}$ by scoring the plans 
+associated with the constraints, using the
+$ScoreSolutionConstraint$ function which returns
+the plan associated with the given constraint, and its score.
+The plan returned at this stage is ignored.
+
+Once we have generated $\mathfrak{J}$ and $\Theta$, we call BOX to choose 
+the optimal constraint for the current problem instance $z$.
+BOX chooses $\theta^{(t)}$ using the upper bounds previously defined before, 
+and evaluates it using the $ScoreSolutionConstraint$ function
+which returns the numerical quality of the plan generated with $\theta^{(t)}$,
+and the plan, $P_{\theta^{(t)}}$, associated with the constraint. 
+It repeats these two steps for $k$ number of rounds. After $k$ rounds,
+BOX returns the plan that has the highest score.
+
+
+\begin{algorithm}[tb]
+\small
+   \caption{BOX($ \{C_{1,i}\}_{i=1,\ldots,m},\{C_{2,i}\}_{i=1,\ldots,m}, k, \Theta, \mathfrak{J}$)}
+   \label{alg:BOX}
+\begin{algorithmic}
+\STATE $\tilde{\Theta} = \{\}$ \emph{// a set of evaluated constraints}
+\STATE $\tilde{\mathfrak{J}} = \{\}$ \emph{// values of evaluated constraints}
+\STATE $P_{\tilde{\Theta}} = \{\}$ \emph{// plans of evaluated constraints}
+\STATE Setup $ \{B_c(\theta_i,z)\}_{i=1,\cdots,m }\text{ according to eqn. \ref{eqn:bc} } $
+\STATE $ \theta^{(1)} = arg\min_{ \theta \in \Theta} \mathfrak{B}_c $, break ties randomly
+\STATE $\tilde{\Theta} =  \tilde{\Theta} \cup \theta^{(1)}$
+  \FOR{ $t=2$ {\bfseries to} $k$ }
+  	\STATE Setup $\{B_{c,\tilde{\Theta}} (\theta_i,z)\}_{i=1,\cdots,m }$ \text{ according to eqn \ref{eqn:bp}}
+	\STATE Setup $\{ B_k(\theta_i) \}_{i=1,\cdots,m}$ \text{ according to eqn \ref{eqn:b}}
+	\STATE $\theta^{(t)} =  arg\min_{ \theta_i \in \Theta}\{ B_k(\theta_i) \}_{i=1,\cdots,m}$, break ties randomly
+	\STATE $[J^z(\theta^{(t)}),P_{\theta^{(t)}}] = ScoreSolutionConstraint(\theta^{(t)})$ 
+	\STATE $\tilde{\mathfrak{J}} = \tilde{\mathfrak{J}} \cup J^z(\theta^{(t)})$
+	\STATE $\tilde{\Theta} =  \tilde{\Theta} \cup \theta^{(t)}$	
+	\STATE $P_{\tilde{\Theta}} =  P_{\tilde{\Theta}}  \cup P_{\theta^{(t)}}$	
+  \ENDFOR
+  \STATE $\hat{\theta}^* =  arg\max_{ \theta \in \tilde{\Theta} } \tilde{\mathfrak{J}}$
+  \STATE {\bf return} $P_{\hat{\theta}^*}$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[tb]
+\small
+\caption{GenerateTrainingData($n,u,\Theta=\{\}$)}
+\label{alg:GenTrainData}
+\begin{algorithmic}
+\STATE $z_1,\ldots, z_n \sim P(z)$  \emph{// sample $n$ problem  instances}
+\STATE \emph{// Generate   solution constraints if not given}
+\IF {$\Theta$ is empty}
+\FOR{$j=1$ {\bfseries to} $u$}
+\STATE $\theta_j = Solver(z_i)$
+\STATE $\Theta = \Theta \cup \theta_j$
+\ENDFOR
+\STATE  $m = n\cdot u$
+\ELSE 
+\STATE $m = |\Theta|$
+\ENDIF
+\STATE \emph{// Evaluate the constraints}
+\FOR{$i=1$ {\bfseries to} $n$}
+\FOR{$j=1$ {\bfseries to} $m$}
+\STATE $[J^{z_i}(\theta_j),\sim] = ScoreSolutionConstraint(\theta_j)$
+\ENDFOR
+\ENDFOR
+\STATE $\mathfrak{J} = AsMatrix(\{J^{z_i}(\theta_j),i=1\ldots n,j=1\ldots m\}) $
+ \STATE {\bf return} $\mathfrak{J},\Theta,m$
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+

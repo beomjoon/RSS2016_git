@@ -1,0 +1,61 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{times}
+
+% numbers option provides compact numerical references in the text. 
+\usepackage[numbers]{natbib}
+\usepackage{multicol}
+\usepackage[bookmarks=true]{hyperref}
+\immediate\write18{bibtex \jobname}
+
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+\usepackage{graphics} % for pdf, bitmapped graphics files
+\usepackage{graphicx} % for pdf, bitmapped graphics files
+\usepackage{epsfig} % for postscript graphics files
+\usepackage{mathptmx} % assumes new font selection scheme installed
+\usepackage{times} % assumes new font selection scheme installed
+\usepackage{amsmath} % assumes amsmath package installed
+\usepackage{amssymb}  % assumes amsmath package installed
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{bm}
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{cor}{Corollary}
+
+
+\begin{document}
+
+% paper title
+\title{Generalizing the knowledge from the past for informed motion planning}
+
+% You will get a Paper-ID when submitting a pdf file to the conference system
+\author{Anonymous. Paper-ID [add your ID here]}
+
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+%\input{abstract}
+\input{intro}
+\input{algorithm}
+%\input{theory}
+\input{experiments}
+
+
+\IEEEpeerreviewmaketitle
+
+  
+
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
+
+

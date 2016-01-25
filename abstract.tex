@@ -1,0 +1,44 @@
+\begin{abstract}
+A desirable property of a robot is the ability to plan
+high quality motions quickly across a range of planning 
+scenes. Here, we propose a metric space of motion planning 
+scenes based on a set of representative motions and their costs,
+whose metric is defined by the structure of the cost function
+associated with each scene. Based on this metric, we
+propose an algorithm for generalizing a motion
+from one scene to another, allowing robots to produce
+better quality plans quickly as it accumulates data. 
+We evaluate our algorithm in three different classes of
+motion planning problems: choosing a pregrasp configuration 
+for generating optimal motions, choosing 
+a base location and grasp for picking an object, 
+and choosing an subgoal for a standard motion 
+planning algorithm. We show that, even as the 
+surrounding environment changes,  we can generate 
+high quality plans quickly in all these problems.
+\iffalse
+As the robot gathers interactions with the environment by
+executing its plans and receiving feedbacks, it should 
+be able to plan better quality motions more quickly 
+by referring to the past plans and generalizing them to 
+the given planning scene appropriately. Here we present a
+plan optimization algorithm that utilizes the past search
+experience for guiding the search in the new motion planning
+scene. We achieve this by representing the
+metric betwee planning scenes with a set of motions 
+and their associated score functions, and then using this metric
+to guide the search in a similar fashion to contextual bandits
+algorithms. We evaluate our algorithm in three different
+classes of problems, where the robot is required to optimize 
+a grasp from a discrete set of grasps, across different
+motion planning scenes, a base location 
+in three dimensional continuous space, and eight dimensional 
+subgoal for standard motion planning problem.
+\fi
+\end{abstract}
+
+
+
+
+
+

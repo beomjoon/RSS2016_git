@@ -1,0 +1,12 @@
+Input: C_1, C_2, \mathfrak{J}, k
+For k steps,
+	- Start with B_c
+	- Choose an arm, according to B_c, breaking ties 
+	  randomly, keeping track of the evaluated arms
+	- Construct B_p values using the evaluated arms
+	- Construct B = min Bc,Bp
+	- Out of all the arms that have not been evaluated so far,
+	  evaluate an arm according to B vals, 
+	  breaking ties randomly, keeping track of the evaluated arms
+Output: max(evaluated_arms)
+

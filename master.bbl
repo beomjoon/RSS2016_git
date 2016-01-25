@@ -1,0 +1,14 @@
+\begin{thebibliography}{1}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Munos.(2011)]{MunosNIPS11}
+R.~Munos.
+\newblock Optimization of deterministic functions without the knowledge of its
+  smoothness.
+\newblock \emph{Advances in Neural Information Processing Systems}, 2011.
+
+\end{thebibliography}
